@@ -1,5 +1,9 @@
 package com.abhishek_karmakar.cosu_sample;
 
+import android.app.ActivityManager;
+import android.app.admin.DevicePolicyManager;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -14,10 +18,14 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener
+{
+    private DevicePolicyManager mDevicePolicyManager;
+    private Boolean boolLockState;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -41,7 +49,9 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-
+        //init the device policy manager.
+        mDevicePolicyManager = (DevicePolicyManager)getSystemService(Context.DEVICE_POLICY_SERVICE);
+        boolLockState = false;
     }
 
     @Override
@@ -78,17 +88,29 @@ public class MainActivity extends AppCompatActivity
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
+    public boolean onNavigationItemSelected(MenuItem item)
+    {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
         if (id == R.id.nav_camera)
         {
-            // lock the device here.
+            //setup the locking of the device here.
+            if(mDevicePolicyManager.isLockTaskPermitted(getApplicationContext().getPackageName()))
+            {
+                Intent intentLock = new Intent(getApplicationContext(), MainActivity.class);
+                startActivity(intentLock);
+                finish();
+            }
 
         } else if (id == R.id.nav_gallery)
         {
             // unlock the device here.
+            ActivityManager am = (ActivityManager)getSystemService(Context.ACTIVITY_SERVICE);
+            if(am.getLockTaskModeState() == ActivityManager.LOCK_TASK_MODE_LOCKED)
+            {
+                stopLockTask();
+            }
 
         } else if (id == R.id.nav_share) {
 
@@ -100,4 +122,27 @@ public class MainActivity extends AppCompatActivity
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
+
+    @Override
+    protected void onStart()
+    {
+        super.onStart();
+        // start the locked mode if the activity is not already started.
+
+        /*TODO: Setup a boolean at the time of locking and check it everytime to make sure that
+        unlocked state is not given*/
+
+        if(mDevicePolicyManager.isLockTaskPermitted(this.getPackageName()))
+        {
+            ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+            if(am.getLockTaskModeState() == ActivityManager.LOCK_TASK_MODE_NONE)
+            {
+                // start the lock
+                startLockTask();
+
+            }
+        }
+    }
+
+
 }
