@@ -2,9 +2,16 @@ package com.abhishek_karmakar.cosu_sample;
 
 import android.app.ActivityManager;
 import android.app.admin.DevicePolicyManager;
+import android.app.admin.SystemUpdatePolicy;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.os.BatteryManager;
 import android.os.Bundle;
+import android.os.UserManager;
+import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.view.View;
@@ -16,12 +23,25 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener
 {
     private DevicePolicyManager mDevicePolicyManager;
+    private PackageManager mPackageManager;
+
+
+    //TODO: later add this to check the state of the lock.
     private Boolean boolLockState;
+
+    // add a variable to keep the component name in the application.
+    private ComponentName mAdminComponentName;
+
+    public static final String LOCK_ACTIVITY_KEY = "lock_activity";
+    public static final int FROM_LOCK_ACTIVITY = 1;
+
+    //
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -49,9 +69,43 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        //init the device policy manager.
+        //set default COSU policy
         mDevicePolicyManager = (DevicePolicyManager)getSystemService(Context.DEVICE_POLICY_SERVICE);
         boolLockState = false;
+
+        // Retrieve DeviceAdminReceiver ComponentName so we can make
+        // device management api calls later
+            //mAdminComponentName = DeviceAdminReceiver.getComponentName(this);
+
+        // Retrieve Package Manager so that we can enable and
+        // disable LockedActivity
+            mPackageManager = this.getPackageManager();
+
+        // call the methods to implement the device policies.
+        mAdminComponentName = DeviceAdminReceiver.getComponentName(this);
+        mDevicePolicyManager = (DevicePolicyManager)getSystemService(Context.DEVICE_POLICY_SERVICE);
+        if(mDevicePolicyManager.isDeviceOwnerApp(getPackageName()))
+        {
+            setDefaultCosuPolicies(true);
+        }
+        else
+        {
+            Toast.makeText(getApplicationContext(),"Application not set to device owner", Toast.LENGTH_SHORT).show();
+        }
+
+        // check that the activity is starting the correct lockedActvity.
+        Intent intent = getIntent();
+
+        if(intent.getIntExtra(MainActivity.LOCK_ACTIVITY_KEY,0) ==
+                MainActivity.FROM_LOCK_ACTIVITY){
+            mDevicePolicyManager.clearPackagePersistentPreferredActivities(
+                    mAdminComponentName,getPackageName());
+            mPackageManager.setComponentEnabledSetting(
+                    new ComponentName(getApplicationContext(), MainActivity.class),
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP);
+        }
+
     }
 
     @Override
@@ -95,6 +149,18 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.start_lock)
         {
+            if(mDevicePolicyManager.isDeviceOwnerApp(getApplicationContext().getPackageName()))
+            {
+                Intent intentLock = new Intent(getApplicationContext(), MainActivity.class);
+                mPackageManager.setComponentEnabledSetting(
+                        new ComponentName(getApplicationContext(),
+                                MainActivity.class),
+                        PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                        PackageManager.DONT_KILL_APP);
+                startActivity(intentLock);
+                //finish();
+            }
+
             //setup the locking of the device here.
             if(mDevicePolicyManager.isLockTaskPermitted(getApplicationContext().getPackageName()))
             {
@@ -111,6 +177,11 @@ public class MainActivity extends AppCompatActivity
             {
                 stopLockTask();
             }
+            // set the policies to false and enable everything back.
+            setDefaultCosuPolicies(false);
+            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+            startActivity(intent);
+            finish();
 
         } else if (id == R.id.nav_share)
         {
@@ -143,6 +214,89 @@ public class MainActivity extends AppCompatActivity
             }
         }
     }
+
+    // the below methods allow us to take advantage of the latest device management apis
+    private void setDefaultCosuPolicies(boolean active) {
+        //set user-restrictions
+        setUserRestriction(UserManager.DISALLOW_SAFE_BOOT, active);
+        setUserRestriction(UserManager.DISALLOW_FACTORY_RESET, active);
+        setUserRestriction(UserManager.DISALLOW_ADD_USER, active);
+        setUserRestriction(UserManager.DISALLOW_MOUNT_PHYSICAL_MEDIA, active);
+        setUserRestriction(UserManager.DISALLOW_ADJUST_VOLUME, active);
+
+        //Disable keyguard and status bar
+        mDevicePolicyManager.setKeyguardDisabled(mAdminComponentName, active);
+        mDevicePolicyManager.setKeyguardDisabled(mAdminComponentName, active);
+
+        //enable STAY_ON_WHILE_PLUGGED_IN
+        enableStayOnWhilePluggedIn(active);
+
+        //set system update policy
+        if (active)
+        {
+            mDevicePolicyManager.setSystemUpdatePolicy(mAdminComponentName, SystemUpdatePolicy.createWindowedInstallPolicy(60,120));
+        }
+        else
+        {
+            mDevicePolicyManager.setSystemUpdatePolicy(mAdminComponentName,null);
+        }
+
+        //set this activity as a lock task package
+        mDevicePolicyManager.setLockTaskPackages(mAdminComponentName,active?new String[]{getPackageName()}:new String[]{});
+
+        IntentFilter intentFilter = new IntentFilter(Intent.ACTION_MAIN);
+        intentFilter.addCategory(Intent.CATEGORY_HOME);
+        intentFilter.addCategory(Intent.CATEGORY_DEFAULT);
+
+        if(active)
+        {
+            //set the cosu activity as home intent so that it is started on reboot
+            mDevicePolicyManager.addPersistentPreferredActivity(mAdminComponentName, intentFilter, new ComponentName(getPackageName(), MainActivity.class.getName()));
+        }
+        else
+        {
+            mDevicePolicyManager.clearPackagePersistentPreferredActivities(mAdminComponentName,getPackageName());
+        }
+
+    }
+
+
+    private void setUserRestriction(String restriction, boolean disallow)
+    {
+        if(disallow)
+        {
+            mDevicePolicyManager.addUserRestriction(mAdminComponentName, restriction);
+        }
+        else
+        {
+            mDevicePolicyManager.clearUserRestriction(mAdminComponentName, restriction);
+        }
+    }
+
+    private void enableStayOnWhilePluggedIn(boolean enabled)
+    {
+        if(enabled)
+        {
+            mDevicePolicyManager.setGlobalSetting(
+                    mAdminComponentName,
+                    Settings.Global.STAY_ON_WHILE_PLUGGED_IN,
+                    Integer.toString(BatteryManager.BATTERY_PLUGGED_AC
+                    | BatteryManager.BATTERY_PLUGGED_USB
+                    | BatteryManager.BATTERY_PLUGGED_WIRELESS));
+        }
+        else
+        {
+            mDevicePolicyManager.setGlobalSetting(
+                    mAdminComponentName,
+                    Settings.Global.STAY_ON_WHILE_PLUGGED_IN,
+                    "0"
+            );
+        }
+
+    }
+
+
+
 
 
 }

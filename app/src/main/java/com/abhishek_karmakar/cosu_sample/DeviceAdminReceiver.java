@@ -7,9 +7,9 @@ package com.abhishek_karmakar.cosu_sample;
 import android.content.ComponentName;
 import android.content.Context;
 
-public class DeviceAdminReceiver extends android.app.admin.DevicePolicyManager
+public class DeviceAdminReceiver extends android.app.admin.DeviceAdminReceiver
 {
-    public static final String TAG = "DeviceAdministrator"
+    public static final String TAG = "DeviceAdministrator";
     public static ComponentName getComponentName(Context context)
     {
         return new ComponentName(context.getApplicationContext(), DeviceAdminReceiver.class);
