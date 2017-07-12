@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_camera)
+        if (id == R.id.start_lock)
         {
             //setup the locking of the device here.
             if(mDevicePolicyManager.isLockTaskPermitted(getApplicationContext().getPackageName()))
@@ -103,7 +103,7 @@ public class MainActivity extends AppCompatActivity
                 finish();
             }
 
-        } else if (id == R.id.nav_gallery)
+        } else if (id == R.id.stop_lock)
         {
             // unlock the device here.
             ActivityManager am = (ActivityManager)getSystemService(Context.ACTIVITY_SERVICE);
@@ -112,12 +112,13 @@ public class MainActivity extends AppCompatActivity
                 stopLockTask();
             }
 
-        } else if (id == R.id.nav_share) {
+        } else if (id == R.id.nav_share)
+        {
 
-        } else if (id == R.id.nav_send) {
+        } else if (id == R.id.nav_send)
+        {
 
         }
-
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
@@ -139,7 +140,6 @@ public class MainActivity extends AppCompatActivity
             {
                 // start the lock
                 startLockTask();
-
             }
         }
     }
