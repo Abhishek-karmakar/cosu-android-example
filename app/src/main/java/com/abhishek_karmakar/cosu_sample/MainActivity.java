@@ -179,9 +179,9 @@ public class MainActivity extends AppCompatActivity
             }
             // set the policies to false and enable everything back.
             setDefaultCosuPolicies(false);
-            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-            startActivity(intent);
-            finish();
+//            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+//            startActivity(intent);
+//            finish();
 
         } else if (id == R.id.nav_share)
         {

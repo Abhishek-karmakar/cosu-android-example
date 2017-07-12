@@ -23,7 +23,7 @@
         <receiver
             android:name=".DeviceAdminReceiver"
             android:description="@string/app_name"
-            android:lable="@string/lable"
+            android:label="Cosu_Application"
             android:permission="android.permission.BIND_DEVICE_ADMIN">
             <meta-data
                 android:name="android.app.device_admin"
