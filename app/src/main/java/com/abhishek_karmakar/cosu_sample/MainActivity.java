@@ -149,25 +149,32 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.start_lock)
         {
-            if(mDevicePolicyManager.isDeviceOwnerApp(getApplicationContext().getPackageName()))
-            {
-                Intent intentLock = new Intent(getApplicationContext(), MainActivity.class);
-                mPackageManager.setComponentEnabledSetting(
-                        new ComponentName(getApplicationContext(),
-                                MainActivity.class),
-                        PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                        PackageManager.DONT_KILL_APP);
-                startActivity(intentLock);
-                //finish();
-            }
 
-            //setup the locking of the device here.
-            if(mDevicePolicyManager.isLockTaskPermitted(getApplicationContext().getPackageName()))
-            {
-                Intent intentLock = new Intent(getApplicationContext(), MainActivity.class);
-                startActivity(intentLock);
-                finish();
-            }
+            // start the webview
+            Intent webviewIntent = new Intent(getApplicationContext(),WebPayment.class);
+            startActivity(webviewIntent);
+            finish();
+
+
+//            if(mDevicePolicyManager.isDeviceOwnerApp(getApplicationContext().getPackageName()))
+//            {
+//                Intent intentLock = new Intent(getApplicationContext(), MainActivity.class);
+//                mPackageManager.setComponentEnabledSetting(
+//                        new ComponentName(getApplicationContext(),
+//                                MainActivity.class),
+//                        PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+//                        PackageManager.DONT_KILL_APP);
+//                startActivity(intentLock);
+//                //finish();
+//            }
+//
+//            //setup the locking of the device here.
+//            if(mDevicePolicyManager.isLockTaskPermitted(getApplicationContext().getPackageName()))
+//            {
+//                Intent intentLock = new Intent(getApplicationContext(), MainActivity.class);
+//                startActivity(intentLock);
+//                finish();
+//            }
 
         } else if (id == R.id.stop_lock)
         {
