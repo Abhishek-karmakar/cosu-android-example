@@ -25,6 +25,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener
 {
@@ -41,6 +44,10 @@ public class MainActivity extends AppCompatActivity
     public static final String LOCK_ACTIVITY_KEY = "lock_activity";
     public static final int FROM_LOCK_ACTIVITY = 1;
 
+    // Firebase instance variables
+    private FirebaseAuth mfirebaseAuth;
+    private FirebaseUser mfirebaseUser;
+
     //
 
     @Override
@@ -48,6 +55,8 @@ public class MainActivity extends AppCompatActivity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -68,6 +77,20 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        // Initialize the firebase Auth
+        mfirebaseAuth = FirebaseAuth.getInstance();
+        mfirebaseUser = mfirebaseAuth.getCurrentUser();
+        if(mfirebaseUser == null)
+        {
+            // no user found, launch the sign in activity.
+            startActivity(new Intent(this, SignInActivity));
+        }
+
+
+
+
+
 
         //set default COSU policy
         mDevicePolicyManager = (DevicePolicyManager)getSystemService(Context.DEVICE_POLICY_SERVICE);
